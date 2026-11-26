@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Meu Refúgio</title>
+<style>
+:root{--bg:#f5efe3;--card:#fffaf0;--ink:#3a3a2e;--mut:#7d7b68;--acc:#6b7a3e;--gold:#b8955a;--line:#e3d9c3;--r:16px;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);color-scheme:light}
+:root[data-t="delicado"]{--bg:#fbf1ef;--card:#fffdfb;--ink:#4a3a3c;--mut:#9a8386;--acc:#c27b8a;--gold:#c9a55c;--line:#f0dcd9}
+:root[data-t="classico"]{--bg:#efe6dc;--card:#fbf6ef;--ink:#3b2a24;--mut:#85705f;--acc:#7a2e3e;--gold:#b08a3e;--line:#dccdbb}
+:root[data-t="noturno"]{--bg:#1d1f1e;--card:#272a28;--ink:#e8e4d8;--mut:#9a9889;--acc:#a9b97a;--gold:#c9a96a;--line:#383c39;color-scheme:dark}
+@media(prefers-color-scheme:dark){:root:not([data-t]){--bg:#1d1f1e;--card:#272a28;--ink:#e8e4d8;--mut:#9a9889;--acc:#a9b97a;--gold:#c9a96a;--line:#383c39;color-scheme:dark}}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 Georgia,'Times New Roman',serif;padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+main{max-width:720px;margin:0 auto;padding:16px}
+h1{font-size:1.5rem;margin:.2em 0}h2{font-size:1.15rem;margin:1.2em 0 .5em}
+.sub{color:var(--mut);font-size:.9rem;margin:0 0 14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin:10px 0;box-shadow:0 1px 4px #0001}
+input,select,textarea,button{font:inherit;color:var(--ink)}
+input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--bg);margin:4px 0 8px}
+textarea{min-height:110px;resize:vertical}
+button{border:0;border-radius:12px;padding:10px 16px;background:var(--acc);color:#fff;cursor:pointer;transition:transform .1s}
+button:active{transform:scale(.97)}button.g{background:transparent;color:var(--acc);border:1px solid var(--line)}button.d{background:transparent;color:#b3402f;border:1px solid var(--line)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.row>*{flex:0 0 auto}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(46px,1fr));gap:6px}
+.grid button{padding:8px 0;background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.grid button.on{background:var(--acc);color:#fff}.grid button.read{border-color:var(--gold);box-shadow:inset 0 -3px 0 var(--gold)}
+.tag{font-size:.75rem;background:var(--line);border-radius:99px;padding:2px 10px;color:var(--mut)}
+.empty{text-align:center;color:var(--mut);padding:22px 10px}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav button{flex:1;background:none;color:var(--mut);border-radius:0;padding:12px 2px;font-size:.7rem}nav button.on{color:var(--acc);font-weight:bold}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:99px;font-size:.85rem;opacity:0;transition:opacity .25s;pointer-events:none}.toast.s{opacity:1}
+.txt{white-space:pre-wrap;line-height:var(--lh,1.8)}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<nav id="nav"></nav>
+<div class="toast" id="toast"></div>
+<script>
+const BOOKS=`Gênesis:50,Êxodo:40,Levítico:27,Números:36,Deuteronômio:34,Josué:24,Juízes:21,Rute:4,1 Samuel:31,2 Samuel:24,1 Reis:22,2 Reis:25,1 Crônicas:29,2 Crônicas:36,Esdras:10,Neemias:13,Ester:10,Jó:42,Salmos:150,Provérbios:31,Eclesiastes:12,Cantares:8,Isaías:66,Jeremias:52,Lamentações:5,Ezequiel:48,Daniel:12,Oseias:14,Joel:3,Amós:9,Obadias:1,Jonas:4,Miqueias:7,Naum:3,Habacuque:3,Sofonias:3,Ageu:2,Zacarias:14,Malaquias:4,Mateus:28,Marcos:16,Lucas:24,João:21,Atos:28,Romanos:16,1 Coríntios:16,2 Coríntios:13,Gálatas:6,Efésios:6,Filipenses:4,Colossenses:4,1 Tessalonicenses:5,2 Tessalonicenses:3,1 Timóteo:6,2 Timóteo:4,Tito:3,Filemom:1,Hebreus:13,Tiago:5,1 Pedro:5,2 Pedro:3,1 João:5,2 João:1,3 João:1,Judas:1,Apocalipse:22`.split(',').map(s=>{const[i,n]=s.split(':');return{n:i,c:+n}});
+const KEY='meurefugio:v1';
+let S={notes:[],prayers:[],read:{},texts:{},plan:null,log:{},studies:[],sermons:[],methods:[],prefs:{theme:'natural',font:18}};
+try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){toast('Não foi possível salvar neste navegador.')}};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let tv;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('s');clearTimeout(tv);tv=setTimeout(()=>t.classList.remove('s'),2200)}
+let view='bible',bk=0,ch=1,editN=null,editP=null,q='',pf='todos';
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+function theme(){const t=S.prefs.theme;if(t==='natural'&&!matchMedia('(prefers-color-scheme:dark)').matches)document.documentElement.removeAttribute('data-t');else if(t==='natural')document.documentElement.removeAttribute('data-t');else document.documentElement.dataset.t=t;document.documentElement.style.setProperty('--lh',1.6+S.prefs.font/40)}
+function nav(){const it=[['bible','Bíblia'],['notes','Anotações'],['prayers','Orações'],['studies','Estudos'],['more','Mais']];$('#nav').innerHTML=it.map(([k,l])=>`<button class="${(view===k||(k==='more'&&['sermons','plans','set'].includes(view)))?'on':''}" onclick="go('${k}')">${l}</button>`).join('')}
+function go(v){view=v;editN=editP=editS=editG=null;editM=false;render()}
+function render(){theme();nav();({bible:rBible,notes:rNotes,prayers:rPrayers,studies:rStudies,more:rMore,sermons:rSermons,plans:rPlans,set:rSet})[view]();scrollTo(0,0)}
+function ref(){return BOOKS[bk].n+' '+ch}
+function rBible(){const b=BOOKS[bk],k=ref(),tx=S.texts[k]||'',rd=S.read[k];
+$('#app').innerHTML=`<h1>Bíblia</h1><p class="sub">Escolha o livro e o capítulo.</p>
+<select onchange="bk=+this.value;ch=1;rBible()">${BOOKS.map((x,i)=>`<option value="${i}" ${i===bk?'selected':''}>${i<39?'AT':'NT'} · ${x.n}</option>`).join('')}</select>
+<div class="grid">${Array.from({length:b.c},(_,i)=>i+1).map(n=>`<button class="${n===ch?'on':''} ${S.read[b.n+' '+n]?'read':''}" onclick="ch=${n};rBible()">${n}</button>`).join('')}</div>
+<div class="card"><h2 style="margin-top:0">${esc(k)}</h2>
+${tx?`<div class="txt" style="font-size:${S.prefs.font}px">${esc(tx)}</div>`:`<div class="empty">O texto bíblico ainda não está configurado. Para não apresentar conteúdo inventado como Escritura, nenhum texto vem embutido. Cole abaixo o texto de uma tradução que você tenha direito de usar; ele fica salvo só neste aparelho.</div>`}
+<textarea id="tx" placeholder="Colar texto do capítulo (tradução licenciada)">${esc(tx)}</textarea>
+<div class="row"><button class="g" onclick="saveTx()">Salvar texto</button><button class="g" onclick="toggleRead()">${rd?'Desmarcar lido':'Marcar como lido'}</button>
+<button onclick="noteFrom()">Anotar esta passagem</button></div></div>
+<p class="sub">${Object.keys(S.read).length} capítulo(s) marcados como lidos. Serve apenas como organização.</p>`}
+function saveTx(){const v=$('#tx').value.trim(),k=ref();if(v)S.texts[k]=v;else delete S.texts[k];save();toast('Texto salvo');rBible()}
+function toggleRead(){const k=ref();if(S.read[k])delete S.read[k];else{S.read[k]=new Date().toISOString();const t=ds(new Date());S.log[t]=(S.log[t]||0)+1}save();rBible()}
+function noteFrom(){editN={id:null,title:'',ref:ref(),body:'',tags:''};view='notes';render()}
+function rNotes(){
+if(editN){const n=editN;$('#app').innerHTML=`<h1>${n.id?'Editar':'Nova'} anotação</h1>
+<input id="nt" placeholder="Título" value="${esc(n.title)}"><input id="nr" placeholder="Referência (ex.: João 3)" value="${esc(n.ref)}">
+<textarea id="nb" style="min-height:220px" placeholder="Observação, aplicação, dúvidas...">${esc(n.body)}</textarea>
+<input id="ng" placeholder="Etiquetas separadas por vírgula" value="${esc(n.tags)}">
+<div class="row"><button onclick="saveNote()">Salvar</button><button class="g" onclick="go('notes')">Cancelar</button></div>`;return}
+const l=S.notes.filter(n=>(n.title+n.ref+n.body+n.tags).toLowerCase().includes(q.toLowerCase())).sort((a,b)=>b.at-a.at);
+$('#app').innerHTML=`<h1>Anotações</h1><div class="row"><input id="sq" style="flex:1;margin:0" placeholder="Buscar" value="${esc(q)}" oninput="q=this.value;list()"><button onclick="editN={id:null,title:'',ref:'',body:'',tags:''};rNotes()">Nova</button></div><div id="ls"></div>`;list()}
+function list(){const l=S.notes.filter(n=>(n.title+n.ref+n.body+n.tags).toLowerCase().includes(q.toLowerCase())).sort((a,b)=>b.at-a.at);
+$('#ls').innerHTML=l.length?l.map(n=>`<div class="card"><b>${esc(n.title)}</b> <span class="tag">${esc(n.ref)}</span><p class="txt" style="margin:6px 0">${esc(n.body.slice(0,180))}${n.body.length>180?'…':''}</p>${n.tags?n.tags.split(',').map(t=>`<span class="tag">${esc(t.trim())}</span> `).join(''):''}
+<div class="row" style="margin-top:8px"><button class="g" onclick="editN=S.notes.find(x=>x.id==='${n.id}');rNotes()">Editar</button><button class="d" onclick="delNote('${n.id}')">Excluir</button></div></div>`).join(''):`<div class="empty">${S.notes.length?'Nada encontrado.':'Nenhuma anotação ainda. Toque em “Nova” para começar.'}</div>`}
+function saveNote(){const t=$('#nt').value.trim(),b=$('#nb').value.trim();if(!t){toast('Informe um título');return}
+const d={title:t,ref:$('#nr').value.trim(),body:b,tags:$('#ng').value.trim(),at:Date.now()};
+if(editN.id)Object.assign(S.notes.find(x=>x.id===editN.id),d);else S.notes.push({id:uid(),...d});save();toast('Anotação salva');go('notes')}
+function delNote(id){if(confirm('Excluir esta anotação?')){S.notes=S.notes.filter(n=>n.id!==id);save();list();toast('Excluída')}}
+const CATS=['Pessoal','Família','Igreja','Saúde','Trabalho','Outros'];
+function rPrayers(){
+if(editP){const p=editP;$('#app').innerHTML=`<h1>${p.id?'Editar':'Novo'} pedido</h1>
+<textarea id="pt" placeholder="Pedido de oração">${esc(p.text)}</textarea>
+<select id="pc">${CATS.map(c=>`<option ${c===p.cat?'selected':''}>${c}</option>`).join('')}</select>
+<select id="ps"><option value="andamento" ${p.st==='andamento'?'selected':''}>Em andamento</option><option value="respondida" ${p.st==='respondida'?'selected':''}>Respondida</option></select>
+<textarea id="pw" placeholder="Testemunho (opcional)">${esc(p.testimony)}</textarea>
+<div class="row"><button onclick="saveP()">Salvar</button><button class="g" onclick="go('prayers')">Cancelar</button></div>`;return}
+const l=S.prayers.filter(p=>pf==='todos'||(pf==='respondida'?p.st==='respondida':p.st!=='respondida')).sort((a,b)=>b.at-a.at);
+$('#app').innerHTML=`<h1>Diário de oração</h1><p class="sub">Privado, salvo só neste aparelho.</p>
+<div class="row"><button class="${pf==='todos'?'':'g'}" onclick="pf='todos';rPrayers()">Todos</button><button class="${pf==='andamento'?'':'g'}" onclick="pf='andamento';rPrayers()">Em andamento</button><button class="${pf==='respondida'?'':'g'}" onclick="pf='respondida';rPrayers()">Olha o que Deus já fez</button><button onclick="editP={id:null,text:'',cat:'Pessoal',st:'andamento',testimony:''};rPrayers()">Novo</button></div>
+${l.length?l.map(p=>`<div class="card"><span class="tag">${esc(p.cat)}</span> <span class="tag">${p.st==='respondida'?'Respondida':'Em andamento'}</span> <span class="tag">${new Date(p.at).toLocaleDateString('pt-BR')}</span><p class="txt">${esc(p.text)}</p>${p.testimony?`<p class="txt" style="color:var(--acc)"><b>Testemunho:</b> ${esc(p.testimony)}</p>`:''}
+<div class="row"><button class="g" onclick="editP=S.prayers.find(x=>x.id==='${p.id}');rPrayers()">Editar</button><button class="d" onclick="delP('${p.id}')">Excluir</button></div></div>`).join(''):`<div class="empty">${pf==='respondida'?'Ainda não há orações respondidas registradas.':'Nenhum pedido ainda. Toque em “Novo”.'}</div>`}`}
+function saveP(){const t=$('#pt').value.trim();if(!t){toast('Escreva o pedido');return}
+const d={text:t,cat:$('#pc').value,st:$('#ps').value,testimony:$('#pw').value.trim()};
+if(editP.id)Object.assign(S.prayers.find(x=>x.id===editP.id),d);else S.prayers.push({id:uid(),at:Date.now(),...d});save();toast('Pedido salvo');go('prayers')}
+function delP(id){if(confirm('Excluir este pedido?')){S.prayers=S.prayers.filter(p=>p.id!==id);save();rPrayers();toast('Excluído')}}
+const ALL=BOOKS.flatMap(b=>Array.from({length:b.c},(_,i)=>b.n+' '+(i+1)));
+const ds=d=>d.toLocaleDateString('sv-SE');
+function fmt(l){const g=[];l.forEach(k=>{const i=k.lastIndexOf(' '),b=k.slice(0,i),c=k.slice(i+1),x=g[g.length-1];x&&x.b===b?x.c.push(c):g.push({b,c:[c]})});return g.map(x=>x.b+' '+(x.c.length>1?x.c[0]+'–'+x.c[x.c.length-1]:x.c[0])).join('; ')}
+function streak(){let n=0,d=new Date();if(!S.log[ds(d)])d.setDate(d.getDate()-1);while(S.log[ds(d)]){n++;d.setDate(d.getDate()-1)}return n}
+function startPlan(n){S.plan={days:n,start:ds(new Date())};save();toast('Plano iniciado');rPlans()}
+function restartPlan(){S.plan.start=ds(new Date());save();toast('Prazo reiniciado');rPlans()}
+function endPlan(){if(confirm('Encerrar o plano? Seu progresso de leitura continua salvo.')){S.plan=null;save();rPlans()}}
+function markPlan(){const p=S.plan,el=Math.floor((new Date(ds(new Date()))-new Date(p.start))/864e5),dl=Math.max(1,p.days-el),rem=ALL.filter(k=>!S.read[k]),tl=rem.slice(0,Math.ceil(rem.length/dl)),t=ds(new Date());tl.forEach(k=>S.read[k]=new Date().toISOString());S.log[t]=(S.log[t]||0)+tl.length;save();toast('Leitura marcada');rPlans()}
+function rPlans(){const p=S.plan,done=ALL.filter(k=>S.read[k]).length,pc=Math.round(done/ALL.length*100);
+let h='<h1>Planos de leitura</h1>';
+if(!p){h+=`<p class="sub">Escolha em quantos dias deseja ler a Bíblia inteira (${ALL.length} capítulos). Capítulos já marcados como lidos contam.</p><div class="card"><div class="row">${[[30,'30 dias'],[90,'90 dias'],[180,'180 dias'],[365,'1 ano']].map(([n,l])=>`<button onclick="startPlan(${n})">${l}</button>`).join('')}</div></div>`}
+else{const el=Math.floor((new Date(ds(new Date()))-new Date(p.start))/864e5),dl=Math.max(1,p.days-el),rem=ALL.filter(k=>!S.read[k]),tl=rem.slice(0,Math.ceil(rem.length/dl));
+h+=`<p class="sub">Plano de ${p.days} dias · iniciado em ${new Date(p.start+'T12:00').toLocaleDateString('pt-BR')} · ${el>=p.days?'prazo encerrado':'restam '+dl+' dia(s)'}</p>
+<div class="card"><b>${rem.length?'Leitura de hoje':'Plano concluído'}</b><p style="font-size:1.1rem;margin:8px 0">${rem.length?esc(fmt(tl)):'Você leu todos os capítulos. Gratidão!'}</p>${rem.length?'<button onclick="markPlan()">Marcar como lido</button>':''}</div>
+<div class="card"><div style="background:var(--line);border-radius:99px;height:10px;overflow:hidden"><div style="width:${pc}%;height:100%;background:var(--acc)"></div></div>
+<p class="sub" style="margin:8px 0 0">${done} de ${ALL.length} capítulos (${pc}%) · ${Object.keys(S.log).length} dia(s) de leitura · sequência atual: ${streak()} dia(s)</p></div>
+<p class="sub">Se você atrasar, as leituras restantes são redistribuídas automaticamente pelos dias que sobram. O progresso é só uma ferramenta de organização.</p>
+<div class="row"><button class="g" onclick="restartPlan()">Reiniciar prazo</button><button class="d" onclick="endPlan()">Encerrar plano</button></div>`}
+$('#app').innerHTML=h}
+const METHODS=[{name:'SOAP',fields:['Escritura','Observação','Aplicação','Oração']},{name:'Estudo indutivo',fields:['Observação','Interpretação','Aplicação']},{name:'Estudo de personagem',fields:['História','Contexto','Características','Decisões','Erros','Virtudes','Ensinamentos']},{name:'Estudo temático',fields:['Definição','Referências','Contexto','Interpretações','Aplicações']},{name:'Estudo de capítulo',fields:['Contexto','Estrutura','Versículos importantes','Ensinamentos','Conclusões']}];
+let editS=null,editM=false,sf='todos';
+const allM=()=>METHODS.concat(S.methods||[]);
+function pickM(n){editS.title=$('#st').value;editS.ref=$('#sr').value;editS.method=n;rStudies()}
+function saveM(){const n=$('#mn').value.trim(),f=$('#mf').value.split('\n').map(x=>x.trim()).filter(Boolean);if(!n||!f.length){toast('Informe o nome e ao menos um campo');return}if(allM().some(x=>x.name.toLowerCase()===n.toLowerCase())){toast('Já existe um método com esse nome');return}S.methods.push({name:n,fields:f});save();toast('Método criado');go('studies')}
+function saveS(){const t=$('#st').value.trim();if(!t){toast('Informe um título');return}const m=allM().find(x=>x.name===editS.method)||{fields:Object.keys(editS.f)},f={};m.fields.forEach((x,i)=>f[x]=$('#sf'+i).value.trim());const d={method:editS.method,title:t,ref:$('#sr').value.trim(),f,at:Date.now()};if(editS.id)Object.assign(S.studies.find(x=>x.id===editS.id),d);else S.studies.push({id:uid(),...d});save();toast('Estudo salvo');go('studies')}
+function delS(id){if(confirm('Excluir este estudo?')){S.studies=S.studies.filter(s=>s.id!==id);save();rStudies();toast('Excluído')}}
+function rStudies(){
+if(editM){$('#app').innerHTML=`<h1>Novo método</h1><input id="mn" placeholder="Nome do método"><textarea id="mf" placeholder="Um campo por linha (ex.: Contexto)"></textarea><div class="row"><button onclick="saveM()">Salvar</button><button class="g" onclick="go('studies')">Cancelar</button></div>`;return}
+if(editS){const s=editS,m=allM().find(x=>x.name===s.method)||{fields:Object.keys(s.f)};
+$('#app').innerHTML=`<h1>${s.id?'Editar':'Novo'} estudo</h1><select id="sm" ${s.id?'disabled':''} onchange="pickM(this.value)">${allM().map(x=>`<option ${x.name===s.method?'selected':''}>${esc(x.name)}</option>`).join('')}</select>
+<input id="st" placeholder="Título" value="${esc(s.title)}"><input id="sr" placeholder="Referência (ex.: Salmos 23)" value="${esc(s.ref)}">
+${m.fields.map((f,i)=>`<div class="sub" style="margin-top:6px">${esc(f)}</div><textarea id="sf${i}">${esc(s.f[f]||'')}</textarea>`).join('')}
+<div class="row"><button onclick="saveS()">Salvar</button><button class="g" onclick="go('studies')">Cancelar</button></div>`;return}
+const l=S.studies.filter(s=>sf==='todos'||s.method===sf).sort((a,b)=>b.at-a.at);
+$('#app').innerHTML=`<h1>Estudos</h1><p class="sub">Escolha um modelo e preencha. Você pode criar o seu.</p>
+<div class="row"><button onclick="editS={id:null,method:'SOAP',title:'',ref:'',f:{}};rStudies()">Novo estudo</button><button class="g" onclick="editM=true;rStudies()">Novo método</button></div>
+<select onchange="sf=this.value;rStudies()"><option value="todos">Todos os métodos</option>${allM().map(x=>`<option ${x.name===sf?'selected':''}>${esc(x.name)}</option>`).join('')}</select>
+${l.length?l.map(s=>{const v=Object.values(s.f).find(x=>x)||'';return `<div class="card"><span class="tag">${esc(s.method)}</span> ${s.ref?`<span class="tag">${esc(s.ref)}</span>`:''}<p style="margin:6px 0 2px"><b>${esc(s.title)}</b></p><p class="txt sub" style="margin:0 0 8px">${esc(v.slice(0,140))}${v.length>140?'…':''}</p><div class="row"><button class="g" onclick="editS=S.studies.find(x=>x.id==='${s.id}');rStudies()">Abrir</button><button class="d" onclick="delS('${s.id}')">Excluir</button></div></div>`}).join(''):`<div class="empty">${S.studies.length?'Nenhum estudo com esse método.':'Nenhum estudo ainda. Toque em “Novo estudo”.'}</div>`}`}
+const GT=['Culto de domingo','Culto de oração','Santa Ceia','Escola bíblica','Conferência','Outro'];
+const GF=[['church','Igreja'],['preacher','Pregador'],['theme','Tema da mensagem'],['ref','Referência bíblica']],GA=[['notes','Anotações'],['teach','Principais ensinamentos'],['quotes','Frases importantes'],['app','Aplicações práticas'],['later','Reflexões posteriores']];
+let editG=null,gq='',gs='data';
+function newG(){editG={id:null,church:'',preacher:'',date:ds(new Date()),type:GT[0],theme:'',ref:'',notes:'',teach:'',quotes:'',app:'',later:''};rSermons()}
+function rMore(){$('#app').innerHTML=`<h1>Mais</h1><div class="card"><div class="row" style="flex-direction:column;align-items:stretch">${[['sermons','Pregações e cultos'],['plans','Planos de leitura'],['set','Ajustes e backup']].map(([k,l])=>`<button class="g" onclick="go('${k}')">${l}</button>`).join('')}</div></div>`}
+function saveG(){const d={};[...GF,...GA].forEach(([k])=>d[k]=$('#g_'+k).value.trim());d.date=$('#g_date').value||ds(new Date());d.type=$('#g_type').value;if(!d.theme){toast('Informe o tema da mensagem');return}if(editG.id)Object.assign(S.sermons.find(x=>x.id===editG.id),d);else S.sermons.push({id:uid(),...d});save();toast('Pregação salva');go('sermons')}
+function delG(id){if(confirm('Excluir esta pregação?')){S.sermons=S.sermons.filter(s=>s.id!==id);save();glist();toast('Excluída')}}
+function glist(){const l=S.sermons.filter(s=>Object.values(s).join(' ').toLowerCase().includes(gq.toLowerCase())).sort((a,b)=>gs==='data'?b.date.localeCompare(a.date):(a[gs]||'').localeCompare(b[gs]||'','pt'));
+$('#gl').innerHTML=l.length?l.map(s=>`<div class="card"><span class="tag">${esc(s.type)}</span> <span class="tag">${new Date(s.date+'T12:00').toLocaleDateString('pt-BR')}</span><p style="margin:6px 0 2px"><b>${esc(s.theme)}</b></p><p class="sub" style="margin:0 0 8px">${esc([s.preacher,s.church,s.ref].filter(Boolean).join(' · '))}</p><div class="row"><button class="g" onclick="editG=S.sermons.find(x=>x.id==='${s.id}');rSermons()">Abrir</button><button class="d" onclick="delG('${s.id}')">Excluir</button></div></div>`).join(''):`<div class="empty">${S.sermons.length?'Nada encontrado.':'Nenhuma pregação ainda. Toque em “Nova”.'}</div>`}
+function rSermons(){
+if(editG){const g=editG;$('#app').innerHTML=`<h1>${g.id?'Editar':'Nova'} pregação</h1>${GF.map(([k,l])=>`<input id="g_${k}" placeholder="${l}" value="${esc(g[k])}">`).join('')}
+<input type="date" id="g_date" value="${esc(g.date)}"><select id="g_type">${GT.map(t=>`<option ${t===g.type?'selected':''}>${t}</option>`).join('')}</select>
+${GA.map(([k,l])=>`<div class="sub" style="margin-top:6px">${l}</div><textarea id="g_${k}">${esc(g[k])}</textarea>`).join('')}
+<div class="row"><button onclick="saveG()">Salvar</button><button class="g" onclick="go('sermons')">Cancelar</button></div>`;return}
+$('#app').innerHTML=`<h1>Pregações e cultos</h1><div class="row"><input style="flex:1;margin:0" placeholder="Buscar tema, pregador, igreja…" value="${esc(gq)}" oninput="gq=this.value;glist()"><button onclick="newG()">Nova</button></div>
+<select onchange="gs=this.value;glist()"><option value="data" ${gs==='data'?'selected':''}>Ordenar por data</option><option value="preacher" ${gs==='preacher'?'selected':''}>Ordenar por pregador</option><option value="theme" ${gs==='theme'?'selected':''}>Ordenar por tema</option></select><div id="gl"></div>`;glist()}
+function rSet(){$('#app').innerHTML=`<h1>Ajustes</h1><h2>Tema</h2>
+<select onchange="S.prefs.theme=this.value;save();render()">${[['natural','Natural'],['delicado','Delicado'],['classico','Clássico'],['noturno','Noturno']].map(([k,l])=>`<option value="${k}" ${S.prefs.theme===k?'selected':''}>${l}</option>`).join('')}</select>
+<h2>Tamanho do texto bíblico: ${S.prefs.font}px</h2><input type="range" min="14" max="28" value="${S.prefs.font}" oninput="S.prefs.font=+this.value;save();theme();this.previousElementSibling.textContent='Tamanho do texto bíblico: '+this.value+'px'">
+<h2>Backup</h2><p class="sub">Seus dados ficam apenas neste navegador. Exporte um backup de vez em quando.</p>
+<div class="row"><button onclick="exp()">Exportar backup</button><label class="g" style="border:1px solid var(--line);border-radius:12px;padding:10px 16px;color:var(--acc);cursor:pointer">Importar<input type="file" accept=".json" hidden onchange="imp(this.files[0])"></label><button class="d" onclick="wipe()">Apagar tudo</button></div>`}
+function exp(){const a=document.createElement('a');a.href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(S));a.download='meu-refugio-backup.json';a.click();toast('Backup gerado')}
+function imp(f){if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.notes)||!Array.isArray(d.prayers))throw 0;S=Object.assign(S,d);save();toast('Backup restaurado');render()}catch(e){toast('Arquivo inválido')}};r.readAsText(f)}
+function wipe(){if(confirm('Apagar todos os seus dados deste aparelho? Não dá para desfazer.')){S={notes:[],prayers:[],read:{},texts:{},plan:null,log:{},studies:[],sermons:[],methods:[],prefs:S.prefs};save();toast('Dados apagados');render()}}
+render();
+</script>
+</body>
+</html>
